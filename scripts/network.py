@@ -11,19 +11,20 @@ class Network():
         self.inputHeight = 28;
         self.inputWidth = 28;
         self.channels = 1;
-        self.lr = 0.01;
+        
         self.nrOfClasses = 10;
         
+        self.lr = tf.placeholder(tf.float32);
         self.input = tf.placeholder(tf.float32, shape = [None, self.inputHeight * self.inputWidth * self.channels]);
         self.target = tf.placeholder(tf.float32, shape = [None, self.nrOfClasses]);
         self.keep_prop = tf.placeholder(tf.float32);
     
     def WeightVariable(self, shape):
-        initial = tf.truncated_normal(shape, stddev = 0.1);
+        initial = tf.truncated_normal(shape, stddev = 0.01);
         return tf.Variable(initial);
     
     def BiasVariable(self, shape):
-        initial = tf.constant(0.1, shape = shape);
+        initial = tf.constant(0.01, shape = shape);
         return tf.Variable(initial);
     
     def Conv2d(self, x, W):
@@ -34,7 +35,7 @@ class Network():
     
     def CreateNetwork(self):
 
-        convolutions = [[5,5,self.channels, 32], "pool", [5,5,32,32], "pool"];
+        convolutions = [[5,5,self.channels, 32], [3,3, 32, 32], "pool", [3,3,32,32], [3,3,32,32], "pool"];
         
         self.weightsConv = [];
         self.biasConv = [];
@@ -83,7 +84,7 @@ class Network():
         print "Number of CNN Features: ", nrOfConvFeatures;
         self.flatShape = tf.reshape(self.convOutput[-1], [-1, nrOfConvFeatures]);
         
-        self.topLayers = [500, 50];
+        self.topLayers = [1024, 500, 50];
         
         self.weight = [];
         self.bias = [];
@@ -91,7 +92,10 @@ class Network():
         
         for i in range(0, len(self.topLayers)):
             if (i == len(self.topLayers) - 1): # Last layer so output size
-                self.weight.append(self.WeightVariable([self.topLayers[i-1], self.nrOfClasses]));
+                if (len(self.topLayers) > 1):
+                    self.weight.append(self.WeightVariable([self.topLayers[i-1], self.nrOfClasses]));
+                else:
+                    self.weight.append(self.WeightVariable([nrOfConvFeatures, self.nrOfClasses]));
                 self.bias.append(self.BiasVariable([self.nrOfClasses]));
                 
             elif (i == 0):
@@ -106,10 +110,15 @@ class Network():
         self.topLayers = [];
    
         
-        for i in range(0, len(self.weight)):
+        for i in range(0, len(self.weight)):            
+            if (i == 0 and i == len(self.weight) - 1):
+                self.topLayers.append(tf.add(tf.matmul(self.flatShape, self.weight[i]), self.bias[i]));
+            
             if (i == 0): # First layer, takes flatShape as input (which is the output of Conv layers)
                 self.topLayers.append(tf.nn.relu6(tf.add(tf.matmul(self.flatShape, self.weight[i]), self.bias[i])));
             
+            elif (i == len(self.weight) - 1): # Final layer
+                self.topLayers.append(tf.add(tf.matmul(self.topLayers[-1], self.weight[i]), self.bias[i]));
             else: # Connect the rest of the top layers
                 self.topLayers.append(tf.nn.relu6(tf.add(tf.matmul(self.topLayers[-1], self.weight[i]), self.bias[i])));       
                 
@@ -127,11 +136,15 @@ class Network():
         self.saver = tf.train.Saver();
         self.sess.run(tf.global_variables_initializer());  
         
-    def Train(self, input, target):        
-        self.trainX.run(session = self.sess, feed_dict = {self.input : input, self.target: target, self.keep_prop : 0.5});     
+    def Train(self, input, target, lr):        
+        self.trainX.run(session = self.sess, feed_dict = {self.input : input, self.target: target, self.lr : lr, self.keep_prop : 0.5});     
         
-    def Save(self, path):
-        self.saver.save(self.sess, os.path.join(path, "cnn_model.ckpt")); 
+    def Save(self, path, param = None):
+        if param == None:
+            model = "cnn_model.ckpt";
+        else:
+            model = "cnn_model" + param + ".ckpt";
+        self.saver.save(self.sess, os.path.join(path, model)); 
         
     def Load(self, path, model = "cnn_model.ckpt"):
         self.saver.restore(self.sess, os.path.join(path, model));
