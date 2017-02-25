@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-from network import Network
+from topLayer import Network
 import sys
-import time
+
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
@@ -13,18 +13,16 @@ def CreateLabels(x):
         label[l] = 1;
         labels.append(label);
     
-    return labels;
-       
+    return labels;       
 
 df = pd.read_csv("/home/rik/KaggleData/mnist/train.csv");
 
 data = df.as_matrix();
 
-
 y = data[:, 0];
-x = data[:, 1:].astype(np.float32) / 255;
+x = np.load("/home/rik/KaggleData/mnist/featuresTrain.npy");
 
-totalNrOfSamples =  x.shape[0];
+totalNrOfSamples = x.shape[0];
 totalNrOfVal = 0;
 totalNrOfTrain = totalNrOfSamples - totalNrOfVal;
 print 'Total Training examples:', totalNrOfTrain
@@ -34,27 +32,25 @@ trainInput = x[:totalNrOfTrain];
 trainTarget = CreateLabels(y[:totalNrOfTrain]);
 valInput = x[totalNrOfTrain:];
 valTarget = CreateLabels(y[totalNrOfTrain:]);
-testInput = mnist.test.images;
+testInput = np.load("/home/rik/KaggleData/mnist/featuresTest.npy");
 testTarget = mnist.test.labels;
 
-network = Network();
+network = Network(1);
 network.CreateNetwork();
 
 if (len(sys.argv) > 1):
     network.Load("/home/rik/models/", sys.argv[1] + ".ckpt");
 
-maxEpochs = 10000;
+maxEpochs = 100000;
 batch_size = 256;
 
-lr = 0.001;
+lr = 0.0001;
 minLr = 0.00001;
-decay = 0.99;
-begin = time.time();
+decay = 0.95;
+
 for e in range(maxEpochs):
-    #print time.time() - begin;
-    #begin = time.time();
+    
     if e % 10 == 0:
-        
         trainEval = [];
         for t in range(0, len(trainInput), batch_size):
             if (t+batch_size < len(trainInput)):
@@ -113,4 +109,6 @@ for e in range(maxEpochs):
 
     if lr >= minLr:
         lr = lr * decay;
+    elif not lr == minLr:
+        lr = minLr
     
