@@ -8,14 +8,14 @@ class Network():
         config.gpu_options.allow_growth = True;
         self.sess = tf.InteractiveSession(config = config);
         
-        self.inputHeight = 28;
-        self.inputWidth = 28;
-        self.channels = 1;
+        self.inputHeight = 32;
+        self.inputWidth = 32;
+        self.channels = 3;
         
-        self.nrOfClasses = 10;
+        self.nrOfClasses = 2;
         
         self.lr = tf.placeholder(tf.float32);
-        self.input = tf.placeholder(tf.float32, shape = [None, self.inputHeight * self.inputWidth * self.channels]);
+        self.input = tf.placeholder(tf.float32, shape = [None, self.inputHeight, self.inputWidth, self.channels]);
         self.target = tf.placeholder(tf.float32, shape = [None, self.nrOfClasses]);
         self.keep_prop = tf.placeholder(tf.float32);
     
@@ -35,7 +35,7 @@ class Network():
     
     def CreateNetwork(self):
 
-        convolutions = [[9,9,self.channels, 32],[7,7,32, 64], [5, 5, 64, 128], "pool", [3,3,128,64],[3,3,64,32], [3,3,32,32], [3,3,32,16], "pool"];
+        convolutions = [[5,5,self.channels, 32], "pool", [3,3,32,32], "pool", [3,3,32,32], "pool"];
         
         self.weightsConv = [];
         self.biasConv = [];        
@@ -57,8 +57,7 @@ class Network():
          
         self.convOutput = [];   
 
-        self.flatInput = tf.reshape(self.input, [-1, self.inputHeight, self.inputWidth, self.channels])
-        
+                
         wi = 0;
         for i in range(len(convolutions)):
             
@@ -69,7 +68,7 @@ class Network():
                 outShape = convolutions[i][-1];
                 beta = tf.Variable(tf.constant(0.0, shape=[outShape]), name='beta', trainable=True)
                 gamma = tf.Variable(tf.constant(1.0, shape=[outShape]), name='gamma', trainable=True)
-                convOutput = self.Conv2d(self.flatInput, self.weightsConv[wi]) + self.biasConv[wi];
+                convOutput = self.Conv2d(self.input, self.weightsConv[wi]) + self.biasConv[wi];
                 batch_mean, batch_var = tf.nn.moments(convOutput, [0,1,2], name='moments')
                 batchNormal = tf.nn.batch_normalization(convOutput, batch_mean, batch_var, beta, gamma, 1e-3);
                 self.convOutput.append(tf.nn.relu6(batchNormal));    
@@ -88,11 +87,11 @@ class Network():
         finalNrOfKernels = shape[-1];
         
         # Output of the Convolution part, flatted
-        nrOfConvFeatures = finalNrOfKernels * 7 * 7 * 1
+        nrOfConvFeatures = finalNrOfKernels * 4 * 4 * 1
         print "Number of CNN Features: ", nrOfConvFeatures;
         self.flatShape = tf.reshape(self.convOutput[-1], [-1, nrOfConvFeatures]);
         
-        self.topLayers = [1024];
+        self.topLayers = [50];
         
         self.weight = [];
         self.bias = [];

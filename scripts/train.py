@@ -1,47 +1,7 @@
-import pandas as pd
 import numpy as np
 from network import Network
 import sys
 import time
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-
-def CreateLabels(x):
-    labels = [];
-    for l in x:
-        label = np.zeros(10);
-        label[l] = 1;
-        labels.append(label);
-    
-    return labels;
-       
-
-df = pd.read_csv("/home/rik/KaggleData/mnist/train.csv");
-
-data = df.as_matrix();
-
-
-y = data[:, 0];
-x = data[:, 1:].astype(np.float32) / 255;
-
-totalNrOfSamples =  x.shape[0];
-totalNrOfVal = 0;
-totalNrOfTrain = totalNrOfSamples - totalNrOfVal;
-print 'Total Training examples:', totalNrOfTrain
-print 'Total Validiation examples:', totalNrOfVal
-
-trainInput = x[:totalNrOfTrain];
-trainTarget = CreateLabels(y[:totalNrOfTrain]);
-valInput = x[totalNrOfTrain:];
-valTarget = CreateLabels(y[totalNrOfTrain:]);
-testInput = mnist.test.images;
-testTarget = mnist.test.labels;
-
-network = Network();
-network.CreateNetwork();
-
-if (len(sys.argv) > 1):
-    network.Load("/home/rik/models/", sys.argv[1] + ".ckpt");
 
 maxEpochs = 10000;
 batch_size = 256;
