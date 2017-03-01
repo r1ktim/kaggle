@@ -8,8 +8,8 @@ class Network():
         config.gpu_options.allow_growth = True;
         self.sess = tf.InteractiveSession(config = config);
         
-        self.inputHeight = 32;
-        self.inputWidth = 32;
+        self.inputHeight = 52;
+        self.inputWidth = 52;
         self.channels = 3;
         
         self.nrOfClasses = 2;
@@ -35,7 +35,7 @@ class Network():
     
     def CreateNetwork(self):
 
-        convolutions = [[5,5,self.channels, 32], "pool", [3,3,32,32], "pool", [3,3,32,32], "pool"];
+        convolutions = [[9,9,self.channels, 16], "pool", [3,3,16,16], "pool"];
         
         self.weightsConv = [];
         self.biasConv = [];        
@@ -87,11 +87,11 @@ class Network():
         finalNrOfKernels = shape[-1];
         
         # Output of the Convolution part, flatted
-        nrOfConvFeatures = finalNrOfKernels * 4 * 4 * 1
+        nrOfConvFeatures = finalNrOfKernels * 13 * 13 * 1
         print "Number of CNN Features: ", nrOfConvFeatures;
         self.flatShape = tf.reshape(self.convOutput[-1], [-1, nrOfConvFeatures]);
         
-        self.topLayers = [50];
+        self.topLayers = [200];
         
         self.weight = [];
         self.bias = [];
